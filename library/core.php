@@ -100,9 +100,14 @@ class pageAssetsOptimizer_core{
 
     public function log_error($error, $onlySelected = false)
     {
-        if ($this->useErrorLog == true || $onlySelected == true) {
+        if (
+            ($this->useErrorLog === true || $onlySelected === true) &&
+            defined('WP_DEBUG') && WP_DEBUG
+        ) {
             $this->log(true);
-            error_log(print_r($error, true));
+
+            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Only runs in debug mode.
+            error_log(is_scalar($error) ? $error : wp_json_encode($error));
         }
     }
 
@@ -119,7 +124,8 @@ class pageAssetsOptimizer_core{
 
         $this->logErrors = $logError;
         if ($this->logErrors) {
-            ini_set('error_log', $this->errorFile);
+            $file = plugin_dir_path(__FILE__) . 'error.log';
+			file_put_contents($file, wp_json_encode($error) . PHP_EOL, FILE_APPEND);
             if (!$wp_filesystem->exists($this->errorFile)) {
                 $wp_filesystem->touch($this->errorFile);
                 $wp_filesystem->chmod($this->errorFile, FS_CHMOD_FILE);

@@ -79,7 +79,11 @@ class page_assets_optimizer_Settings {
     }
     
     public function handleExport() {
-        if (!isset($_POST['export_nonce']) || !wp_verify_nonce($_POST['export_nonce'], 'export_page_assets_settings_nonce')) {
+        $export_nonce = isset($_POST['export_nonce'])
+            ? sanitize_text_field(wp_unslash($_POST['export_nonce']))
+            : '';
+
+        if (empty($export_nonce) || !wp_verify_nonce($export_nonce, 'export_page_assets_settings_nonce')) {
             wp_die(esc_html__('Invalid nonce.', 'page-assets-optimizer'));
         }
         
@@ -115,51 +119,119 @@ class page_assets_optimizer_Settings {
     }
     
     public function handleImport() {
-        if (!isset($_POST['import_nonce']) || !wp_verify_nonce($_POST['import_nonce'], 'import_page_assets_settings_nonce')) {
+        $import_nonce = isset($_POST['import_nonce'])
+            ? sanitize_text_field(wp_unslash($_POST['import_nonce']))
+            : '';
+
+        if (empty($import_nonce) || !wp_verify_nonce($import_nonce, 'import_page_assets_settings_nonce')) {
             wp_die(esc_html__('Invalid nonce.', 'page-assets-optimizer'));
         }
         
-        if (empty($_FILES['import_file']['tmp_name'])) {
-            wp_die(esc_html__('Please upload a file to import.', 'page-assets-optimizer'));
+        if (!isset($_FILES['import_file'])) {
+            wp_die(esc_html__('No file uploaded.', 'page-assets-optimizer'));
         }
-        
-        $file_content = file_get_contents($_FILES['import_file']['tmp_name']);
-        $import_package = json_decode($file_content, true);
-        
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            wp_die(esc_html__('Invalid JSON file.', 'page-assets-optimizer'));
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+
+        $uploaded_file = wp_handle_upload(
+            $_FILES['import_file'], // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+            ['test_form' => false]
+        );
+
+        if (isset($uploaded_file['error'])) {
+            wp_die(esc_html($uploaded_file['error']));
         }
+
+        // Validate file type
+        $file_type = wp_check_filetype($uploaded_file['file']);
+        if ($file_type['ext'] !== 'json') {
+            wp_die(esc_html__('Only JSON files are allowed.', 'page-assets-optimizer'));
+        }
+
+        // Safe usage
+        $file_content = file_get_contents($uploaded_file['file']);
 
         global $wpdb;
         $imported = 0;
         
         // Handle page_assets_selections import
-        if (isset($import_package['page_assets_selections'])) {
+        if (isset($import_package['page_assets_selections']) && is_array($import_package['page_assets_selections'])) {
+
             $selections_table = $wpdb->prefix . 'page_assets_selections';
-            $wpdb->query("TRUNCATE TABLE {$selections_table}");
-            
+
+            // Safe TRUNCATE (table is controlled, not user input)
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is not user input.
+            $wpdb->query("TRUNCATE TABLE `" . esc_sql($selections_table) . "`");
             foreach ($import_package['page_assets_selections'] as $row) {
-                if (!isset($row['page_id']) || !isset($row['preferences'])) {
+                if (!isset($row['page_id'], $row['preferences'])) {
                     continue;
                 }
-                
-                $wpdb->insert($selections_table, $row);
+
+                // ✅ Sanitize each field
+                $page_id     = intval($row['page_id']);
+                $preferences = wp_json_encode($row['preferences']); // assuming it's array/json
+
+                $wpdb->insert(
+                    $selections_table,
+                    [
+                        'page_id'     => $page_id,
+                        'preferences' => $preferences,
+                    ],
+                    [
+                        '%d',
+                        '%s',
+                    ]
+                );
                 $imported++;
             }
         }
         
         // Handle page_assets_optimization_prefs import
-        if (isset($import_package['page_assets_optimization_prefs'])) {
+        if (isset($import_package['page_assets_optimization_prefs']) && is_array($import_package['page_assets_optimization_prefs'])) {
+
             $prefs_table = $wpdb->prefix . 'page_assets_optimization_prefs';
-            $wpdb->query("TRUNCATE TABLE {$prefs_table}");
-            
+
+            // Safe TRUNCATE (table name is controlled, not user input)
+            // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name is hardcoded and safe.
+            $wpdb->query("TRUNCATE TABLE `" . esc_sql($prefs_table) . "`");
+
             foreach ($import_package['page_assets_optimization_prefs'] as $row) {
-                $wpdb->insert($prefs_table, $row);
+
+                if (!is_array($row)) {
+                    continue;
+                }
+
+                // 🔐 Sanitize fields (adjust based on your actual columns)
+                $data = [];
+
+                if (isset($row['option_name'])) {
+                    $data['option_name'] = sanitize_text_field($row['option_name']);
+                }
+
+                if (isset($row['option_value'])) {
+                    // If JSON or complex data
+                    $data['option_value'] = is_array($row['option_value'])
+                        ? wp_json_encode($row['option_value'])
+                        : sanitize_textarea_field($row['option_value']);
+                }
+
+                if (empty($data)) {
+                    continue;
+                }
+
+                $format = array_fill(0, count($data), '%s');
+
+                $wpdb->insert(
+                    $prefs_table,
+                    $data,
+                    $format
+                );
+
                 $imported++;
             }
         }
         
-        wp_redirect(admin_url('admin.php?page=settings&imported='.$imported));
+        wp_safe_redirect(admin_url('admin.php?page=settings&imported='.$imported));
         echo '<script>
             showToast("Settings imported successfully!", "success");
         </script>';

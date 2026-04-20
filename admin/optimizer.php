@@ -3,8 +3,23 @@ if (!defined('ABSPATH')) exit;
 
 class page_assets_optimizer_Optimizer {
     public function display() {
-        wp_enqueue_style('page-assets-optimizer-admin', PAGE_ASSETS_OPTIMIZER_BASE_URL . '/assets/css/admin.css');
-        wp_enqueue_script('page-assets-optimizer-admin', PAGE_ASSETS_OPTIMIZER_BASE_URL . '/assets/js/admin.js', array('jquery'), '1.0', true);
+        $css_file = plugin_dir_path(__FILE__) . 'assets/css/admin.css';
+        $js_file  = plugin_dir_path(__FILE__) . 'assets/js/admin.js';
+
+        wp_enqueue_style(
+            'page-assets-optimizer-admin',
+            PAGE_ASSETS_OPTIMIZER_BASE_URL . '/assets/css/admin.css',
+            array(),
+            file_exists($css_file) ? filemtime($css_file) : '1.0'
+        );
+
+        wp_enqueue_script(
+            'page-assets-optimizer-admin',
+            PAGE_ASSETS_OPTIMIZER_BASE_URL . '/assets/js/admin.js',
+            array('jquery'),
+            file_exists($js_file) ? filemtime($js_file) : '1.0',
+            true
+        );
         
         wp_localize_script('page-assets-optimizer-admin', 'pageAssetsOptimizer', array(
             'nonce' => wp_create_nonce('page_assets_optimizer'),

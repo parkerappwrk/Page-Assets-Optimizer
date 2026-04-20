@@ -1,4 +1,7 @@
 <?php 
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 class PageAssetsOptimizer_Frontend {
     
     private static $instance;

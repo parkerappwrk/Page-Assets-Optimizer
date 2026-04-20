@@ -10,12 +10,14 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 == Description ==
 
-Page Assets Optimizer helps you improve your website performance by:
+Page Assets Optimizer provides tools to manage CSS and JavaScript assets on a per-page basis.
 
-* Disabling individual assets or full plugins on specific pages
-* Automatically optimizing images (convert JPG/PNG to WebP/AVIF)
-* Minifying CSS and JavaScript files
-* Tracking performance improvements
+It allows administrators to:
+
+* Disable individual assets or entire plugins on specific pages
+* Configure image optimization settings, including conversion to modern formats such as WebP or AVIF
+* Minify CSS and JavaScript files
+* View asset usage and optimization settings within the admin panel
 
 == Installation ==
 

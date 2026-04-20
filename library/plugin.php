@@ -87,7 +87,7 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
 	// Check if the user is logged in, has the 'manager' role, and is trying to access plugins.php
         if (is_user_logged_in() && current_user_can('manager') && strpos($_SERVER['REQUEST_URI'], 'plugins.php') !== false) {
             // Redirect the user away from plugins.php to the dashboard
-            wp_redirect(admin_url());
+            wp_safe_redirect(admin_url());
             exit;
         }
 	}
@@ -290,7 +290,12 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
         global $wpdb;
         $tablePrefix = $wpdb->prefix;
         // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $query is prepared above
-        if($wpdb->get_row("SELECT post_name FROM ".$tablePrefix."_posts WHERE post_name = '" . $post_name . "'", 'ARRAY_A')) {
+        $query = $wpdb->prepare(
+            "SELECT post_name FROM {$tablePrefix}_posts WHERE post_name = %s",
+            $post_name
+        );
+
+        if ($wpdb->get_row($query, ARRAY_A)) {
             return true;
         } else {
             return false;
@@ -636,7 +641,7 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
                 throw new Exception(esc_html__('Missing optimization data', 'page-assets-optimizer'));
             }
             
-            error_log('Received raw optimization data: ' . print_r($_POST['optimization_data'], true));
+            log_error('Received raw optimization data: ' . print_r($_POST['optimization_data'], true));
             
             $data = stripslashes($_POST['optimization_data']);
             $optimization_data = json_decode($data, true);
@@ -646,7 +651,7 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
                 throw new Exception(sprintf(esc_html__('JSON decode error: %s', 'page-assets-optimizer'), esc_html(json_last_error_msg())));
             }
             
-            error_log('Decoded optimization data: ' . print_r($optimization_data, true));
+            log_error('Decoded optimization data: ' . print_r($optimization_data, true));
             
             $wpdb->query('START TRANSACTION');
             
@@ -657,7 +662,7 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
                 
                 $preferences = $this->validatePreferences($preferences);
                 
-                error_log('Saving preferences for page ' . $page_id . ': ' . print_r($preferences, true));
+                log_error('Saving preferences for page ' . $page_id . ': ' . print_r($preferences, true));
                 
                 $result = $wpdb->replace(
                     $wpdb->prefix.'page_assets_selections',
@@ -681,7 +686,7 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
             if (isset($wpdb)) {
                 $wpdb->query('ROLLBACK');
             }
-            error_log('Save error: ' . $e->getMessage());
+            log_error('Save error: ' . $e->getMessage());
             wp_send_json_error(['message' => esc_html__('Operation failed', 'page-assets-optimizer') . ': ' . esc_html($e->getMessage())], 500);
         }
     }
@@ -901,7 +906,7 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
         $js_path = plugin_dir_path(__FILE__) . '../assets/js/admin.js';
         
         if (!file_exists($css_path) || !file_exists($js_path)) {
-            error_log('Page Assets Optimizer: Missing asset files');
+            log_error('Page Assets Optimizer: Missing asset files');
             return;
         }
         
@@ -992,7 +997,7 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
             wp_send_json_error(__('Unauthorized', 'page-assets-optimizer'));
             return;
         }
-        error_log('administrator saveMinify ' . current_user_can('administrator'));
+        log_error('administrator saveMinify ' . current_user_can('administrator'));
         check_ajax_referer('page_assets_optimizer', 'nonce');
         
         global $wpdb;
@@ -1000,7 +1005,7 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
         if (!$test) {
             throw new Exception(esc_html__('Table does not exist', 'page-assets-optimizer'));
         }
-        error_log('Post data: ' . print_r($_POST, true));
+        log_error('Post data: ' . print_r($_POST, true));
         
         if (!isset($_POST['enabledCss']) || !isset($_POST['enabledJs'])) {
             throw new Exception(esc_html__('Missing optimization data', 'page-assets-optimizer'));
@@ -1018,7 +1023,7 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
                 'updated_at' => gmdate('Y-m-d H:i:s')
             ]
         );
-        error_log('Database error: ' . $wpdb->last_error);
+        log_error('Database error: ' . $wpdb->last_error);
         
         if ($result === false) {
             /* translators: %s: Database error message */

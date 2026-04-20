@@ -1,6 +1,6 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
- class ptpfrwLibrary{
+ class PTPFRW_Library {
      public $itemsPerPage;
      public $currentPage;
 

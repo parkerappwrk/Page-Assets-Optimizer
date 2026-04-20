@@ -27,7 +27,7 @@ class pageAssetsOptimizer_hooks extends pageAssetsOptimizer_core{
         }
         
         if (!$wp_filesystem->is_writable($mu_plugin_dir)) {
-            error_log('Page Assets Optimizer: MU plugins directory is not writable.');
+            log_error('Page Assets Optimizer: MU plugins directory is not writable.');
             return;
         }
         
@@ -48,7 +48,7 @@ class pageAssetsOptimizer_hooks extends pageAssetsOptimizer_core{
         ';
 
         if (!$wp_filesystem->put_contents($mu_plugin_file, $content, FS_CHMOD_FILE)) {
-            error_log('Page Assets Optimizer: Failed to write MU plugin file.');
+            log_error('Page Assets Optimizer: Failed to write MU plugin file.');
         }
     }
 

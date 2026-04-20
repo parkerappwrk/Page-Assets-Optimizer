@@ -223,10 +223,10 @@ class PageAssetsOptimizer_Frontend {
             $image->writeImage($destination);
             $image->clear();
             $image->destroy();
-            error_log('AVIF conversion success');
+            log_error('AVIF conversion success');
             return true;
         } catch (Exception $e) {
-            error_log('AVIF conversion failed: ' . $e->getMessage());
+            log_error('AVIF conversion failed: ' . $e->getMessage());
             return false;
         }
     }
@@ -267,19 +267,19 @@ class PageAssetsOptimizer_Frontend {
             }
 
             if (!$wp_filesystem->is_writable(dirname($min_path))) {
-                error_log("Not writable: " . dirname($min_path));
+                log_error("Not writable: " . dirname($min_path));
             }
     
             if (!empty($minified)) {
                 $written = file_put_contents($min_path, $minified);
                 if ($written === false) {
-                    error_log("Failed to write minified file to: $min_path");
+                    log_error("Failed to write minified file to: $min_path");
                 } else {
-                    error_log("Minified file successfully written: $min_path");
+                    log_error("Minified file successfully written: $min_path");
                 }
                 return $min_url;
             } else {
-                error_log("Minified content is empty for: " . $path);
+                log_error("Minified content is empty for: " . $path);
             }
         }
     
