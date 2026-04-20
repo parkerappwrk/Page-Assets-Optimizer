@@ -1,0 +1,52 @@
+<svg width="160" height="160" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Top clamp part -->
+                        <path d="M15 15 L35 15 L45 25 L85 25 L95 15 L105 15 Q110 15 110 20 L110 25 Q110 30 105 30 L95 30 L85 30 L45 30 L35 30 L15 30 Q10 15 15 15 Z" fill="#9CA3AF" stroke="#6B7280" stroke-width="1"></path>
+                        
+                        <!-- Top clamp handle -->
+                        <rect x="85" y="20" width="15" height="8" rx="2" fill="#6B7280"></rect>
+                        
+                        <!-- Vertical screw/compression rod -->
+                        <rect x="28" y="25" width="8" height="70" fill="#6B7280"></rect>
+                        
+                        <!-- Screw threads -->
+                        <rect x="25" y="30" width="14" height="3" rx="1.5" fill="#9CA3AF"></rect>
+                        <rect x="25" y="37" width="14" height="3" rx="1.5" fill="#9CA3AF"></rect>
+                        <rect x="25" y="44" width="14" height="3" rx="1.5" fill="#9CA3AF"></rect>
+                        <rect x="25" y="51" width="14" height="3" rx="1.5" fill="#9CA3AF"></rect>
+                        <rect x="25" y="58" width="14" height="3" rx="1.5" fill="#9CA3AF"></rect>
+                        <rect x="25" y="65" width="14" height="3" rx="1.5" fill="#9CA3AF"></rect>
+                        <rect x="25" y="72" width="14" height="3" rx="1.5" fill="#9CA3AF"></rect>
+                        <rect x="25" y="79" width="14" height="3" rx="1.5" fill="#9CA3AF"></rect>
+                        
+                        <!-- CSS File Icon (replacing folder) -->
+                        <g transform="translate(45, 35)">
+                            <!-- File background -->
+                            <path d="M0 8 L0 45 Q0 50 5 50 L35 50 Q40 50 40 45 L40 15 L28 0 L5 0 Q0 0 0 8 Z" fill="#264DE4" stroke="#1B3BA3" stroke-width="1.5"></path>
+                            
+                            <!-- File fold -->
+                            <path d="M28 0 L28 12 Q28 15 31 15 L40 15" stroke="#1B3BA3" stroke-width="1.5" fill="none"></path>
+                            
+                            <!-- CSS text -->
+                            <text x="20" y="35" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#FFFFFF">CSS</text>
+                        </g>
+                        
+                        <!-- Bottom clamp part -->
+                        <path d="M15 85 L35 85 L45 95 L85 95 L95 85 L105 85 Q110 85 110 90 L110 95 Q110 100 105 100 L95 100 L85 100 L45 100 L35 100 L15 100 Q10 85 15 85 Z" fill="#9CA3AF" stroke="#6B7280" stroke-width="1"></path>
+                        
+                        <!-- Bottom clamp handle -->
+                        <rect x="85" y="92" width="15" height="8" rx="2" fill="#6B7280"></rect>
+                        
+                        <!-- Base platform -->
+                        <ellipse cx="10" cy="110" rx="8" ry="6" fill="#9CA3AF"></ellipse>
+                        <ellipse cx="110" cy="110" rx="8" ry="6" fill="#9CA3AF"></ellipse>
+                        <rect x="18" y="107" width="84" height="6" fill="#9CA3AF"></rect>
+                        <rect x="25" y="104" width="70" height="12" rx="6" fill="#6B7280"></rect>
+                        
+                        <!-- Compression indication arrows -->
+                        <g stroke="#EF4444" stroke-width="2" fill="none" opacity="0.8">
+                            <!-- Top arrow pointing down -->
+                            <path d="M45 12 L45 22 M40 17 L45 22 L50 17"></path>
+                            <!-- Bottom arrow pointing up -->
+                            <path d="M45 108 L45 98 M40 103 L45 98 L50 103"></path>
+                        </g>
+                    </svg>

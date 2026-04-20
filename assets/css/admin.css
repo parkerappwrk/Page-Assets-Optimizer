@@ -1,0 +1,256 @@
+.page-assets-optimizer {
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.all-assets-list-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.optimizer-section, .plugin-optimizer {
+    background: #fff;
+    padding: 20px;
+    border: 1px solid #ccd0d4;
+    margin-top: 20px;
+}
+
+.plugin-optimizer {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.asset-list-header {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-bottom: none;
+}
+
+.page-assets-optimizer .asset-list, .plugin-optimizer .plugin-list {
+    margin: 0 0 20px 0;
+    border: 1px solid #ddd;
+    padding: 15px;
+    background: #f9f9f9;
+    max-height: 400px;
+    overflow-y: auto;
+    width: 100%;
+}
+
+.all-assets-list-container .asset-list {
+    border-top: none;
+    margin: 0;
+}
+
+.page-assets-optimizer .asset-list ul, .plugin-list-container .plugin-list ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.page-assets-optimizer .asset-list li, .plugin-list-container .plugin-list li {
+    padding: 0;
+    border-bottom: 1px solid #eee;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    gap: 10px;
+}
+
+.page-assets-optimizer .asset-list li.selected, .plugin-list-container .plugin-list li.selected {
+    background-color: #FFE2E2;
+    color: #FF0000;
+}
+
+.page-assets-optimizer .asset-list li.selected .asset-handle {
+    color: #FF0000;
+}
+
+.page-assets-optimizer .asset-list li:last-child, .plugin-list-container .plugin-list li:last-child {
+    border-bottom: none;
+}
+
+.page-assets-optimizer .asset-list label, .plugin-list-container .plugin-list label {
+    display: flex;
+    align-items: center;
+    padding: 10px 0 10px 0px;
+    gap: 8px;
+    flex-grow: 1;
+    cursor: pointer;
+}
+
+.page-assets-optimizer .asset-list input[type="checkbox"], .plugin-list-container .plugin-list input[type="checkbox"] {
+    margin: 0;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.page-assets-optimizer .asset-handle {
+    font-style: italic;
+    font-size: 1.1em;
+    color: #000;
+}
+
+.page-assets-optimizer .asset-src {
+    font-size: 0.9em;
+    color: #444;
+}
+
+.page-assets-optimizer .no-handle {
+    color: #999;
+    font-style: italic;
+    font-size: 0.9em;
+}
+
+.page-assets-optimizer .asset-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.page-assets-optimizer .button-group {
+    margin: 15px 0;
+    display: flex;
+    gap: 10px;
+}
+
+.page-assets-optimizer .button-group:last-child {
+    margin-bottom: 40px;
+}
+
+.page-assets-optimizer .button-group button {
+    margin-right: 0;
+}
+
+.optimize-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.nav-tab-wrapper {
+    position: relative;
+}
+
+.nav-tab-wrapper .nav-tab {
+    padding: 10px 20px;
+    min-width: 200px;
+    font-size: 15px;
+    position: relative;
+    transition: all ease 0.2s;
+    letter-spacing: 1px;
+    margin-left: 0;
+    margin-right: 20px;
+    background: #fff;
+    text-align: center;
+    border: none;
+    margin: 0;
+    height: auto;
+    display: inline-block;
+    text-transform: uppercase;
+}
+
+.nav-tab-wrapper .nav-tab:active, .nav-tab-wrapper .nav-tab:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.nav-tab-wrapper .nav-tab-active {
+    background-color: #009CDE;
+    color: #fff;
+}
+
+#wpfooter {
+    position: fixed;
+    z-index: 0;
+}
+
+.page-assets-optimizer .additional-files-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.page-assets-optimizer .additional-files-type {
+    margin-bottom: 20px;
+}
+
+.page-assets-optimizer .additional-files-type h5 {
+    font-size: 1.1em;
+    margin-bottom: 10px;
+    color: #2271b1;
+}
+
+.page-assets-optimizer .additional-files-container {
+    margin-top: 15px;
+}
+
+.page-assets-optimizer .file-input-group {
+    display: flex;
+}
+
+.page-assets-optimizer .file-input-group .form-control {
+    flex-grow: 1;
+}
+
+.page-assets-optimizer .file-input-group .add-file-btn {
+    width: 100px;
+}
+
+.page-assets-optimizer .additional-file-item {
+    padding: 8px 12px;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.page-selector .form-check-input:checked {
+    background: transparent;
+}
+
+.auto-suggest-segment-list {
+    background: #FFF;
+    box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.auto-suggest-segment-list .auto-list {
+    height: 48px;
+    font-size: 15px;
+    color: #000;
+    cursor: pointer;
+}
+
+.auto-suggest-segment-list .auto-list:hover {
+    background: #1967D2;
+    color: #FFF;
+}
+
+.optimization-status {
+    background: #f9f9fb;
+    border-top: 1px solid #eaeaec;
+    border-radius: 0px 0px 4px 4px;
+}
+
+.optimization-status .toggle-switch {
+    opacity: 0.2;
+    filter: grayscale(1);
+}
+
+.optimization-status.active .toggle-switch {
+    opacity: 1;
+    filter: grayscale(0);
+}
+
+.card.stats-card {
+    border-radius: 4px;
+    border: 1px solid #eaeaec;
+    padding: 0;
+}
