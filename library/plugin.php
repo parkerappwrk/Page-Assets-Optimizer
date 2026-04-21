@@ -1013,7 +1013,8 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
 
         $enabledCss = isset($_POST['enabledCss']) ? (int)$_POST['enabledCss'] : 1;
         $enabledJs = isset($_POST['enabledJs']) ? (int)$_POST['enabledJs'] : 1;
-
+        
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching
         $wpdb->query('START TRANSACTION');
         $result = $wpdb->replace(
             $wpdb->prefix.'page_assets_optimization_prefs',
