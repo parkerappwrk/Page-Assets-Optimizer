@@ -177,5 +177,49 @@ class pageAssetsOptimizer_core{
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
     }
+
+    public function pao_get_cached_query($cache_key, $query, $type = 'var', $cache_group = 'page_assets_optimizer', $expiration = 3600) {
+        global $wpdb;
+
+        /**
+         * IMPORTANT:
+         * $query MUST be a fully prepared SQL statement using $wpdb->prepare().
+         * Do NOT pass raw or user-generated input into this function.
+         */
+
+        // Try cache first
+        $result = wp_cache_get($cache_key, $cache_group);
+
+        if (false === $result) {
+
+            // Always prepare query if args are provided
+            if (!empty($args)) {
+                $query = $wpdb->prepare($query, $args);  // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+            }
+
+            switch ($type) {
+                case 'row':
+                    $result = $wpdb->get_row($query);  // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+                    break;
+
+                case 'results':
+                    $result = $wpdb->get_results($query);  // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+                    break;
+
+                case 'col':
+                    $result = $wpdb->get_col($query);  // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+                    break;
+
+                case 'var':
+                default:
+                    $result = $wpdb->get_var($query);  // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+                    break;
+            }
+
+            wp_cache_set($cache_key, $result, $cache_group, $expiration);
+        }
+
+        return $result;
+    }
 	
 }

@@ -40,53 +40,62 @@ class PageAssetsOptimizer_Frontend {
     
     public function setupAssetRestrictions() {
         global $post, $wp_filesystem;
-        
-        if (is_admin() || !$post) {
+
+        if ( is_admin() || ! $post ) {
             return;
         }
-        
+
         $preferences = array();
-        $page_id = $post->ID;
-        $parsed_url = wp_parse_url($_SERVER['REQUEST_URI']);
-        $segments = isset($parsed_url['path']) ? array_filter(explode('/', trim($parsed_url['path'], '/'))) : [];
+        $page_id     = $post->ID;
+
+        // ✅ Safely get REQUEST_URI
+        $request_uri = isset( $_SERVER['REQUEST_URI'] )
+            ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) )
+            : '';
+
+        $parsed_url = ! empty( $request_uri ) ? wp_parse_url( $request_uri ) : array();
+
+        $path     = isset( $parsed_url['path'] ) ? trim( $parsed_url['path'], '/' ) : '';
+        $segments = ! empty( $path ) ? array_filter( explode( '/', $path ) ) : array();
 
         // First check full path
-        $full_path = trim($parsed_url['path'], '/');
-        $preferences = $this->getPagePreferences($full_path);
-        
+        if ( ! empty( $path ) ) {
+            $preferences = $this->getPagePreferences( $path );
+        }
+
         // If no preferences found for full path, check individual segments
-        if (empty($preferences)) {
-            foreach ($segments as $segment) {
-                $segment_prefs = $this->getPagePreferences($segment);
-                if(!empty($segment_prefs)){
+        if ( empty( $preferences ) && ! empty( $segments ) ) {
+            foreach ( $segments as $segment ) {
+                $segment_prefs = $this->getPagePreferences( $segment );
+                if ( ! empty( $segment_prefs ) ) {
                     $preferences = $segment_prefs;
                     break;
                 }
             }
         }
-        
+
         // Fallback to page ID if no segment matches found
-        if (empty($preferences)) {
-            $preferences = $this->getPagePreferences($page_id);
+        if ( empty( $preferences ) ) {
+            $preferences = $this->getPagePreferences( $page_id );
         }
 
-        if (!empty($preferences)) {
+        if ( ! empty( $preferences ) ) {
+
             // Handle CSS restrictions
-            if (!empty($preferences['styles_to_remove'])) {
-                foreach ($preferences['styles_to_remove'] as $handle) {
-                    wp_dequeue_style($handle);
-                    wp_deregister_style($handle);
+            if ( ! empty( $preferences['styles_to_remove'] ) ) {
+                foreach ( $preferences['styles_to_remove'] as $handle ) {
+                    wp_dequeue_style( $handle );
+                    wp_deregister_style( $handle );
                 }
             }
-            
+
             // Handle JS restrictions
-            if (!empty($preferences['scripts_to_remove'])) {
-                foreach ($preferences['scripts_to_remove'] as $handle) {
-                    wp_dequeue_script($handle);
-                    wp_deregister_script($handle);
+            if ( ! empty( $preferences['scripts_to_remove'] ) ) {
+                foreach ( $preferences['scripts_to_remove'] as $handle ) {
+                    wp_dequeue_script( $handle );
+                    wp_deregister_script( $handle );
                 }
             }
-            
         }
     }
 
@@ -125,65 +134,74 @@ class PageAssetsOptimizer_Frontend {
         });
     }
 
-    function convert_images_to_webp_or_avif($content) {
+    function convert_images_to_webp_or_avif( $content ) {
         global $wpdb;
-        $table_name = $wpdb->prefix . 'page_assets_optimization_prefs';
-        $query = $wpdb->prepare("SELECT image_optimization FROM {$wpdb->prefix}page_assets_optimization_prefs");
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $query is prepared above
-        $preferences = $wpdb->get_var($query);
-        if ($preferences !== '1') {
+
+        $table_name = esc_sql($wpdb->prefix . 'page_assets_optimization_prefs');
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom table, no user input
+        $preferences = $wpdb->get_var(
+            "SELECT image_optimization FROM {$table_name} LIMIT 1"
+        );
+
+        if ( $preferences !== '1' ) {
             return $content;
         }
 
-        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
-        if (strpos($accept, 'image/webp') === false && strpos($accept, 'image/avif') === false) {
+        $accept = isset( $_SERVER['HTTP_ACCEPT'] )
+            ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_ACCEPT'] ) )
+            : '';
+
+        if ( strpos( $accept, 'image/webp' ) === false && strpos( $accept, 'image/avif' ) === false ) {
             return $content;
         }
-        
-        return preg_replace_callback('/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i', function($matches) use ($accept) {
-            $original_url = $matches[1];
-            
-            if (!preg_match('/\.(jpe?g|png)$/i', $original_url) || strpos($original_url, '/uploads/') === false) {
+
+        return preg_replace_callback(
+            '/<img[^>]+src=["\']([^"\']+)["\'][^>]*>/i',
+            function ( $matches ) use ( $accept ) {
+
+                $original_url = $matches[1];
+
+                if (
+                    ! preg_match( '/\.(jpe?g|png)$/i', $original_url ) ||
+                    strpos( $original_url, '/uploads/' ) === false
+                ) {
+                    return $matches[0];
+                }
+
+                $upload_dir = wp_get_upload_dir();
+                $image_path = str_replace( $upload_dir['baseurl'], $upload_dir['basedir'], $original_url );
+
+                $webp_path = preg_replace( '/\.(jpe?g|png)$/i', '.webp', $image_path );
+                $webp_url  = preg_replace( '/\.(jpe?g|png)$/i', '.webp', $original_url );
+
+                $avif_path = preg_replace( '/\.(jpe?g|png)$/i', '.avif', $image_path );
+                $avif_url  = preg_replace( '/\.(jpe?g|png)$/i', '.avif', $original_url );
+                
+                if ( strpos( $accept, 'image/avif' ) !== false ) {
+                    if ( ! file_exists( $avif_path ) && file_exists( $image_path ) ) {
+                        $this->custom_convert_to_avif( $image_path, $avif_path );
+                    }
+
+                    if ( file_exists( $avif_path ) ) {
+                        return str_replace( $original_url, $avif_url, $matches[0] );
+                    }
+                }
+                
+                if ( strpos( $accept, 'image/webp' ) !== false ) {
+                    if ( ! file_exists( $webp_path ) && file_exists( $image_path ) ) {
+                        $this->custom_convert_to_webp( $image_path, $webp_path );
+                    }
+
+                    if ( file_exists( $webp_path ) ) {
+                        return str_replace( $original_url, $webp_url, $matches[0] );
+                    }
+                }
+
                 return $matches[0];
-            }
-    
-            $upload_dir = wp_get_upload_dir();
-            $image_path = str_replace($upload_dir['baseurl'], $upload_dir['basedir'], $original_url);
-            
-            // Initialize variables
-            $webp_path = '';
-            $webp_url = '';
-            $avif_path = '';
-            $avif_url = '';
-            
-            if (strpos($accept, 'image/webp') !== false || strpos($accept, 'image/avif') !== false) {
-                $webp_path = preg_replace('/\.(jpe?g|png)$/i', '.webp', $image_path);
-                $webp_url  = preg_replace('/\.(jpe?g|png)$/i', '.webp', $original_url);
-    
-                $avif_path = preg_replace('/\.(jpe?g|png)$/i', '.avif', $image_path);
-                $avif_url  = preg_replace('/\.(jpe?g|png)$/i', '.avif', $original_url);
-            }
-            
-            if (strpos($accept, 'image/avif') !== false && !empty($avif_path)) {
-                if (!file_exists($avif_path) && file_exists($image_path)) {
-                    $this->custom_convert_to_avif($image_path, $avif_path);
-                }
-                if (file_exists($avif_path)) {
-                    return str_replace($original_url, $avif_url, $matches[0]);
-                }
-            }
-    
-            if (strpos($accept, 'image/webp') !== false) {
-                if (!file_exists($webp_path) && file_exists($image_path)) {
-                    $this->custom_convert_to_webp($image_path, $webp_path);
-                }
-                if (file_exists($webp_path)) {
-                    return str_replace($original_url, $webp_url, $matches[0]);
-                }
-            }
-    
-            return $matches[0];
-        }, $content);
+            },
+            $content
+        );
     }
     
     function custom_convert_to_webp($source, $destination) {

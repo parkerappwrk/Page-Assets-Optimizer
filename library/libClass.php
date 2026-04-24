@@ -1,6 +1,6 @@
 <?php
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
- class PTPFRW_Library {
+ class Page_Assets_Optimizer_Library  {
      public $itemsPerPage;
      public $currentPage;
 

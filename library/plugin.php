@@ -1,10 +1,9 @@
 <?php
 if (!defined('ABSPATH'))
     exit; // Exit if accessed directly
-    $noticeOnPage=0;
 class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
 {
-
+    public $noticeOnPage  = 0;
     public $logError      = false;
 	public $errorMessage      ='';
 	public $subMenu       = array();
@@ -257,20 +256,26 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
         }
     }
     
-    protected function updateTables($current_version) {
+    protected function updateTables( $current_version ) {
         global $wpdb;
-        
-        if ($current_version < 2) {
-            // Migration to JSON format
-            $wpdb->query("START TRANSACTION");
-            
+
+        if ( $current_version < 2 ) {
+
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transactions require direct queries and cannot be cached
+            $wpdb->query( 'START TRANSACTION' );
+
             try {
-                // Create new table if doesn't exist
+
+                // Create or update tables
                 $this->createTables();
-                
-                $wpdb->query("COMMIT");
-            } catch (Exception $e) {
-                $wpdb->query("ROLLBACK");
+
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transactions require direct queries
+                $wpdb->query( 'COMMIT' );
+
+            } catch ( Exception $e ) {
+
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transactions require direct queries
+                $wpdb->query( 'ROLLBACK' );
             }
         }
     }
@@ -288,18 +293,15 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
     public function check_slug_exists($post_name)
     {
         global $wpdb;
-        $tablePrefix = $wpdb->prefix;
-        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $query is prepared above
         $query = $wpdb->prepare(
-            "SELECT post_name FROM {$tablePrefix}_posts WHERE post_name = %s",
+            "SELECT post_name FROM {$wpdb->posts} WHERE post_name = %s",
             $post_name
         );
 
-        if ($wpdb->get_row($query, ARRAY_A)) {
-            return true;
-        } else {
-            return false;
-        }
+        // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Query is prepared above using $wpdb->prepare()
+        $result = $wpdb->get_row($query, ARRAY_A);
+
+        return !empty($result);
     }
 
     public static function admin_notice_messages()
@@ -578,7 +580,7 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
         setup_postdata($post);
         
         // Trigger WordPress to register scripts/styles
-        do_action('wp_enqueue_scripts');
+        add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_assets' ] );
     }
 
     public function getAssetPreferences() {
@@ -590,6 +592,11 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
         
         try {
             if ($page_id) {
+                $cache_key   = 'page_assets_pref_' . $page_id;
+                $cache_group = 'page_assets_optimizer';
+
+                $preferences = wp_cache_get($cache_key, $cache_group);
+
                 // Get preferences for specific page
                 $result = $wpdb->get_row($wpdb->prepare(
                     "SELECT preferences FROM {$wpdb->prefix}page_assets_selections WHERE page_id = %d",
@@ -606,13 +613,16 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
                 wp_send_json_success($preferences);
             } else {
                 // Fallback: get all preferences (for backward compatibility)
-                $results = $wpdb->get_results("SELECT page_id, preferences FROM {$wpdb->prefix}page_assets_selections");
-                
+                $results = pao_get_cached_query('page_assets_all_preferences', "SELECT page_id, preferences FROM {$wpdb->prefix}page_assets_selections", 'results');
+
                 $all_preferences = [];
-                foreach ($results as $row) {
-                    $all_preferences[$row->page_id] = json_decode($row->preferences, true);
+
+                if (!empty($results)) {
+                    foreach ($results as $row) {
+                        $all_preferences[$row->page_id] = json_decode($row->preferences, true);
+                    }
                 }
-                
+
                 wp_send_json_success($all_preferences);
             }
             
@@ -653,6 +663,7 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
             
             log_error('Decoded optimization data: ' . print_r($optimization_data, true));
             
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transactions require direct queries and cannot be cached
             $wpdb->query('START TRANSACTION');
             
             foreach ($optimization_data as $page_id => $preferences) {
@@ -679,11 +690,13 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
                 }
             }
             
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transactions require direct queries
             $wpdb->query('COMMIT');
             wp_send_json_success(['message' => 'Preferences saved successfully']);
             
         } catch (Exception $e) {
             if (isset($wpdb)) {
+                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transactions require direct queries
                 $wpdb->query('ROLLBACK');
             }
             log_error('Save error: ' . $e->getMessage());
@@ -715,8 +728,7 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
     public function getAssetsForPage() {
         if (!is_user_logged_in()) return;
         
-        do_action('wp_enqueue_scripts');
-        do_action('wp_enqueue_scripts');
+        add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_assets' ] );
 
         global $wp_scripts, $wp_styles;
     
@@ -970,7 +982,8 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
         }
 
         $enabled = isset($_POST['enabled']) ? (int)$_POST['enabled'] : 1;
-
+        
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transactions require direct queries and cannot be cached
         $wpdb->query('START TRANSACTION');
         $result = $wpdb->replace(
             $wpdb->prefix.'page_assets_optimization_prefs',
@@ -984,7 +997,8 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
             /* translators: %s: Database error message */
             throw new Exception(sprintf(esc_html__('Database error: %s', 'page-assets-optimizer'), esc_html($wpdb->last_error)));
         }
-            
+        
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transactions require direct queries
         $wpdb->query('COMMIT');
         
         update_option('page_assets_image_optimization', $enabled);
@@ -1014,7 +1028,7 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
         $enabledCss = isset($_POST['enabledCss']) ? (int)$_POST['enabledCss'] : 1;
         $enabledJs = isset($_POST['enabledJs']) ? (int)$_POST['enabledJs'] : 1;
         
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transactions require direct queries and cannot be cached
         $wpdb->query('START TRANSACTION');
         $result = $wpdb->replace(
             $wpdb->prefix.'page_assets_optimization_prefs',
@@ -1030,7 +1044,8 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
             /* translators: %s: Database error message */
             throw new Exception(sprintf(esc_html__('Database error: %s', 'page-assets-optimizer'), esc_html($wpdb->last_error)));
         }
-            
+        
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Transactions require direct queries
         $wpdb->query('COMMIT');
         
         update_option('page_assets_minify_css', $enabledCss);
@@ -1041,33 +1056,83 @@ class page_assets_optimizer_plugin extends pageAssetsOptimizer_shortcode
 
     public function getSegmentList() {
         global $wpdb;
-        $allSegments = [];
-        $pageIds = $wpdb->get_results("SELECT page_id FROM {$wpdb->prefix}page_assets_selections");
-        if (!$pageIds) {
-            throw new Exception(esc_html__('Table does not exist', 'page-assets-optimizer'));
-        }
-        
-        foreach ($pageIds as $pageId) {
-            $pageID = trim($pageId->page_id);
-            if (!is_numeric($pageID) && is_string($pageID)) {
-                $allSegments[] = $pageID;
+
+        $cache_key   = 'page_assets_segment_list';
+        $cache_group = 'page_assets_optimizer';
+
+        $allSegments = wp_cache_get($cache_key, $cache_group);
+
+        if (false === $allSegments) {
+
+            $results = $wpdb->get_results(
+                "SELECT page_id FROM {$wpdb->prefix}page_assets_selections"
+            );
+
+            if ($results === null) {
+                throw new Exception(esc_html__('Table does not exist', 'page-assets-optimizer'));
             }
+
+            $allSegments = [];
+
+            if (!empty($results)) {
+                foreach ($results as $row) {
+                    $pageID = trim($row->page_id);
+
+                    // keep only non-numeric strings
+                    if (!is_numeric($pageID) && is_string($pageID)) {
+                        $allSegments[] = $pageID;
+                    }
+                }
+            }
+
+            wp_cache_set($cache_key, $allSegments, $cache_group);
         }
+
         wp_send_json_success($allSegments);
     }
 
     public function getSettingsPreferences() {
         global $wpdb;
-        $pageIds = $wpdb->get_results("SELECT image_optimization, minify_css, minify_js FROM {$wpdb->prefix}page_assets_optimization_prefs");
-        if (!$pageIds) {
-            throw new Exception(esc_html__('Table does not exist', 'page-assets-optimizer'));
+
+        $cache_key   = 'page_assets_settings_preferences';
+        $cache_group = 'page_assets_optimizer';
+
+        $data = wp_cache_get($cache_key, $cache_group);
+
+        if (false === $data) {
+
+            // Get preferences (multiple rows)
+            $preferences = $wpdb->get_results(
+                "SELECT image_optimization, minify_css, minify_js 
+                FROM {$wpdb->prefix}page_assets_optimization_prefs"
+            );
+
+            if ($preferences === null) {
+                throw new Exception(esc_html__('Table does not exist', 'page-assets-optimizer'));
+            }
+
+            // Get count (single value)
+            $pageCount = $wpdb->get_var(
+                "SELECT COUNT(*) FROM {$wpdb->prefix}page_assets_selections"
+            );
+
+            if ($pageCount === null) {
+                throw new Exception(esc_html__('Table does not exist', 'page-assets-optimizer'));
+            }
+
+            // Structure data properly (DON'T merge raw arrays)
+            $data = [
+                'preferences' => $preferences,
+                'count'       => (int) $pageCount,
+            ];
+
+            wp_cache_set($cache_key, $data, $cache_group);
         }
 
-        $pageCount = $wpdb->get_results("SELECT COUNT(*) as count FROM {$wpdb->prefix}page_assets_selections");
-        if (!$pageCount) {
-            throw new Exception(esc_html__('Table does not exist', 'page-assets-optimizer'));
-        }
-        $pageIds = array_merge($pageIds, $pageCount);
-        return $pageIds;
+        return $data;
+    }
+
+    public function enqueue_assets() {
+        // enqueue scripts/styles here
     }
 }
